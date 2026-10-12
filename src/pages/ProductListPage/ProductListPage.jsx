@@ -1,30 +1,33 @@
-import { useLoaderData, useSearchParams } from 'react-router-dom';
-import { Input, Select, Space, Empty, Row, Col, Typography } from 'antd';
+import { useSearchParams } from 'react-router-dom';
+import { Input, Select, Space, Empty, Row, Col, Typography, Alert } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import ProductCard from '../../components/ProductCard/ProductCard';
 import Pagination from '../../components/Pagination/Pagination';
-import { LIMIT } from '../../router';
+import { useProductStore } from '../../Store/useProductStore';
 import styles from './ProductListPage.module.scss';
 
 const { Title } = Typography;
 
 export default function ProductListPage() {
-  const { products, total } = useLoaderData();
+  const [, setSearchParams] = useSearchParams();
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const q = searchParams.get('q') ?? '';
-  const sortBy = searchParams.get('sortBy') ?? '';
-  const order = searchParams.get('order') ?? 'asc';
-  const page = Number(searchParams.get('page') ?? 1);
+  const products = useProductStore((s) => s.products);
+  const q = useProductStore((s) => s.q);
+  const sortBy = useProductStore((s) => s.sortBy);
+  const order = useProductStore((s) => s.order);
+  const listError = useProductStore((s) => s.listError);
 
   const updateParams = (patch) => {
-    const next = new URLSearchParams(searchParams);
+    const next = new URLSearchParams(window.location.search);
+
     Object.entries(patch).forEach(([key, value]) => {
       if (value === '' || value == null) next.delete(key);
       else next.set(key, String(value));
     });
+
+    if ('sortBy' in patch && !patch.sortBy) next.delete('order');
     if (!('page' in patch)) next.set('page', '1');
+
     setSearchParams(next);
   };
 
@@ -55,36 +58,34 @@ export default function ProductListPage() {
           ]}
         />
 
-        <Select
-          value={order}
-          disabled={!sortBy}
-          style={{ width: 200 }}
-          onChange={(value) => updateParams({ order: value })}
-          options={[
-            { value: 'asc', label: 'По возрастанию' },
-            { value: 'desc', label: 'По убыванию' },
-          ]}
-        />
+        {sortBy && (
+          <Select
+            value={order}
+            style={{ width: 200 }}
+            onChange={(value) => updateParams({ order: value })}
+            options={[
+              { value: 'asc', label: 'По возрастанию' },
+              { value: 'desc', label: 'По убыванию' },
+            ]}
+          />
+        )}
       </Space>
 
-      {products.length === 0 ? (
+      {listError && <Alert type="error" message={listError} showIcon className={styles.alert} />}
+
+      {products.length === 0 && !listError ? (
         <Empty description="Ничего не найдено" className={styles.empty} />
       ) : (
         <Row gutter={[16, 16]}>
           {products.map((p) => (
             <Col key={p.id} xs={24} sm={12} md={8}>
-              <ProductCard product={p} />
+              <ProductCard id={p.id} />
             </Col>
           ))}
         </Row>
       )}
 
-      <Pagination
-        page={page}
-        total={total}
-        limit={LIMIT}
-        onChange={(p) => updateParams({ page: p })}
-      />
+      <Pagination />
     </div>
   );
 }

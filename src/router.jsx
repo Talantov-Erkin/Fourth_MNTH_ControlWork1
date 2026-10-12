@@ -1,25 +1,17 @@
-import { createBrowserRouter, Link } from 'react-router-dom';
-import { Result, Button } from 'antd';
-import MainLayouts from './Layouts/MainLayouts';
-import ProductListPage from './pages/ProductListPage/ProductListPage';
-import ProductPage from './pages/ProductPage/ProductPage';
-import { getProducts, getProduct } from './API/productApi';
-
-export const LIMIT = 9;
+import { createBrowserRouter } from "react-router-dom";
+import MainLayouts from "./Layouts/MainLayouts";
+import ProductListPage from "./pages/ProductListPage/ProductListPage";
+import ProductPage from "./pages/ProductPage/ProductPage";
+import NotFoundPage from "./pages/NotFoundPage/NotFoundPage";
+import ErrorPage from "./pages/ErrorPage/ErrorPage";
+import { useProductStore } from "./Store/useProductStore";
 
 export const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <MainLayouts />,
-    hydrateFallbackElement: <div>Загрузка приложения…</div>,
-    errorElement: (
-    <Result
-      status="error"
-      title="Что-то пошло не так"
-      subTitle="Попробуйте вернуться в каталог"
-      extra={<Link to="/"><Button type="primary">В каталог</Button></Link>}
-    />
-  ),
+    hydrateFallbackElement: <div style={{ padding: 40 }}>Загрузка…</div>,
+    errorElement: <ErrorPage />,
     children: [
       {
         index: true,
@@ -27,48 +19,43 @@ export const router = createBrowserRouter([
         loader: async ({ request }) => {
           const sp = new URL(request.url).searchParams;
 
-          const params = {
-            page: Number(sp.get('page') ?? 1),
-            limit: LIMIT,
-            q: sp.get('q') ?? '',
-            sortBy: sp.get('sortBy') ?? '',
-            order: sp.get('order') ?? 'asc',
-          };
+          useProductStore.getState().setFilters({
+            q: sp.get("q") ?? "",
+            sortBy: sp.get("sortBy") ?? "",
+            order: sp.get("order") ?? "asc",
+            page: Number(sp.get("page") ?? 1),
+          });
 
           try {
-            return await getProducts(params);
+            await useProductStore.getState().fetchProducts();
           } catch {
-            throw new Response('Не удалось загрузить товары', { status: 500 });
+            throw new Response("Не удалось загрузить товары", { status: 500 });
           }
+          return null;
         },
-        errorElement: (
-          <Result
-            status="500"
-            title="Ошибка загрузки"
-            extra={<Link to="/"><Button type="primary">Обновить</Button></Link>}
-          />
-        ),
       },
       {
-        path: 'products/:id',
+        path: "products/:id",
         element: <ProductPage />,
         loader: async ({ params }) => {
+          if (!params.id) {
+            throw new Response("Товар не найден", { status: 404 });
+          }
           try {
-            return await getProduct(params.id);
+            await useProductStore.getState().fetchProduct(params.id);
           } catch (e) {
             if (e?.response?.status === 404) {
-              throw new Response('Товар не найден', { status: 404 });
+              throw new Response("Товар не найден", { status: 404 });
             }
-            throw new Response('Ошибка загрузки', { status: 500 });
+            throw new Response("Ошибка загрузки", { status: 500 });
           }
+          return null;
         },
-        errorElement: (
-          <Result
-            status="404"
-            title="Товар не найден"
-            extra={<Link to="/"><Button type="primary">В каталог</Button></Link>}
-          />
-        ),
+        errorElement: <ErrorPage />,
+      },
+      {
+        path: "*",
+        element: <NotFoundPage />,
       },
     ],
   },

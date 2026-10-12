@@ -1,11 +1,17 @@
 import { Link } from 'react-router-dom';
 import { Card, Tag, Rate, Typography } from 'antd';
+import { useProductStore } from '../../Store/useProductStore';
 import styles from './ProductCard.module.scss';
 
 const { Title, Text } = Typography;
 
-export default function ProductCard({ product }) {
-  const { id, title, thumbnail, price, rating, brand, stock } = product;
+export default function ProductCard({ id }) {
+  // точечный селектор — компонент перерисуется только если этот товар изменится
+  const product = useProductStore((s) => s.products.find((p) => p.id === id));
+
+  if (!product) return null;
+
+  const { title, thumbnail, price, rating, brand, stock } = product;
 
   return (
     <Link to={`/products/${id}`} className={styles.link}>

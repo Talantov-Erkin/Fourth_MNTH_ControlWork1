@@ -1,12 +1,19 @@
-import { Link, useLoaderData } from 'react-router-dom';
-import { Breadcrumb, Typography, Rate, Tag, Button, Image, Descriptions, Divider } from 'antd';
+import { Link, useParams } from 'react-router-dom';
+import { Breadcrumb, Typography, Rate, Tag, Button, Descriptions, Divider } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
+import { useProductStore } from '../../Store/useProductStore';
 import styles from './ProductPage.module.scss';
 
 const { Title, Text } = Typography;
 
 export default function ProductPage() {
-  const product = useLoaderData();
+  const { id } = useParams();
+  const product = useProductStore((s) => s.current);
+  const currentError = useProductStore((s) => s.currentError);
+
+  if (currentError) return null; 
+  if (!product) return null;     
+
   const { title, images, thumbnail, price, rating, brand, category, stock, description } = product;
   const gallery = images?.length ? images : [thumbnail];
 
@@ -27,11 +34,14 @@ export default function ProductPage() {
 
       <div className={styles.detail}>
         <div className={styles.gallery}>
-          <Image.PreviewGroup>
-            {gallery.map((src, i) => (
-              <Image key={i} src={src} alt={`${title} ${i + 1}`} className={styles.image} />
-            ))}
-          </Image.PreviewGroup>
+          {gallery.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt={`${title} ${i + 1}`}
+              className={styles.image}
+            />
+          ))}
         </div>
 
         <div className={styles.info}>
