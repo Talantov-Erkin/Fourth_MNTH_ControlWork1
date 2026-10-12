@@ -1,0 +1,20 @@
+.layout { min-height: 100vh; background: var(--bg); }
+
+.header {
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.brand { font-weight: 700; font-size: 18px; color: var(--accent); }
+
+.content {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.footer { text-align: center; color: var(--muted); }
